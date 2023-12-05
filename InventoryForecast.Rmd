@@ -1,0 +1,137 @@
+---
+title: "Shaan Puri's $25k X-Challenge"
+output: html_notebook
+---
+<br />
+<br />
+This is an R notebook (with executable code) which demonstrates how to forecast and model inventory requirements for an e-commerce store. Solution implemented by Spencer Bolaños.
+<br />
+<br />
+
+**Problem Statement:** https://twitter.com/ShaanVP/status/1731768603525943633
+
+**Solution:** An implementation of an Economic Order Quantity (EOQ) model with a Safety Stock buffer, and inventory Reorder Point. Or in layman terms - *how much inventory to hold, when to buy more, and how much.*
+
+**Key Concepts To Understand The Code:**
+<br />
+(This section can be skipped entirely if you just want to use the code)
+
+**1) Economic Order Quantity (EOQ)** - an inventory management model that determines the optimal order quantity for a good while minimizing the cost of inventory.
+
+
+<div style="text-align: center;">
+$EOQ = \sqrt{\frac{2DS}{H}}$, where 
+<br />
+<div style="display: inline-block; text-align: left;">
+<div style="margin-left: 1rem;">
+<br />$D$ = annual demand <br />$S$ = cost per order <br />$H$ = annual holding cost per unit
+</div>
+</div>
+</div>
+
+
+**2) Safety Stock** - The minimum amount of goods a firm should hold to mitigate the risk of stockouts.
+
+
+<div style="text-align: center;">
+<br />
+$\text{Safety Stock} = Z \times \sigma_{LT} \times \sqrt{L}$, where
+<br />
+<div style="display: inline-block; text-align: left;">
+<div style="margin-left: 1rem;">
+<br />$Z$ = the Z-score of desired service level <br />$\sigma_{LT}$ = the standard deviation of lead time demand <br />$L$ = lead time.
+</div>
+</div>
+</div>
+
+Note, the "desired service level" in the field of inventory management refers to the probability that your existing stock will meet your demand.  For example, a 95% service level means that you wish to have enough stock-on-hand to meet demand 95% of the time. To maintain a 95% service level you must maintain a Z-score of approximately 1.645. Or in other words, your emergency stock levels should cover demand up to 1.645 standard deviations above the average demand. To maintain a higher level of service (e.g. a 99% service level), you would input a z-score of 2.326. Dont worry my baby sheeple. This has already been abstracted away from you so you dont need to actually calculate this to use the code. Papa-bird provides for his dropshippers.
+
+The standard deviation of lead time demand is just how much demand varies from the mean during your lead time.
+
+**3) Reorder Point** - The level of inventory which triggers an action to replenish that particular inventory
+
+<div style="text-align: center;">
+<br />
+$\text{Reorder Point} = (\text{Average Daily Usage Rate} \times \text{Lead Time}) + \text{Safety Stock}$
+</div>
+
+<br />
+<br />
+**The Implementation**
+<br />
+**Part 1: An EOQ Script written in R.**
+<br />
+```{r}
+# install inventory management library if first time running script
+# install.packages("SCperf") #Un-comment this line to install
+# Load the SCperf library
+library(SCperf)
+
+# Define the required parameters for EOQ calculation
+# D: Annual demand for the product
+# K: Ordering cost per order
+# h: Holding cost per unit per year
+
+D <- 1000   # Example: 1000 units of annual demand
+K <- 50     # Example: $50 per order
+h <- 5      # Example: $5 per unit per year for holding
+
+# Calculate EOQ using the EOQ function from SCperf
+# The EOQ() function in SCperf calculates the Economic Order Quantity based on the given parameters
+# The function returns an atomic vector where the first element is the EOQ
+eoq_result <- EOQ(D, K, h)
+
+# Print the EOQ result
+print(paste("The Economic Order Quantity is:", eoq_result[1]))
+
+
+```
+The output will show the optimal order quantity that minimizes the total cost. So a rational seller should purchase this good 141 units at a time, 7 times per year if possible. (Note, 1000 units of annual demand/141 = ~7 orders per year).
+
+<br />
+**Part 2: A Reorder Point Script written in R.**
+<br />
+```{r}
+library(SCperf)
+
+# Define the required parameters
+
+# Average daily demand
+D_avg <- 3  # Example: 3 units average daily demand
+
+# Standard deviation of daily demand
+D_sd <- 1    # Example: 1 units standard deviation of demand
+
+# Lead time in days
+LT <- 6      # Example: 6 days lead time
+
+# Desired service level (as a probability, not Z-score)
+SL <- 0.95    # Example: 95% service level
+
+#Safety Stock
+Safety_Stock <- SS(SL,D_sd,LT)
+
+#Reorder Point
+Reorder_Point <- ROP(SL,D_avg,D_sd,LT)
+
+# Print the EOQ result
+print(paste("The Safety Stock is:", Safety_Stock[1]))
+print(paste("The Reorder Point is:", Reorder_Point[1]))
+```
+
+Your safety stock is the minimum amount of stock required to predictably maintain your service level or meet demand but we should think about it as your safety net, hence the name. It is already included in your reorder point. We interpret these results to mean that a rational seller should begin to resupply once they have only 22 units remaining.
+
+<br />
+**Part 3: Putting it all together/Final Thoughts**
+<br />
+
+Assume you're a multi-millionaire tech/media mogul named Shaan Puri that owns and operates an e-commerce website that sells MFM-branded t-shirts (hook a brother up btw). Now imagine your business sells 1000 shirts per year with each production run costing 50 dollars per order. The cost of holding your inventory is 5 dollars per shirt per year. Furthermore, lets assume that your website sells an average of 3 shirts per day plus or minus a shirt on average and the lead time to produce new shirts takes 6 days.
+
+The aforementioned models argue the following: You should wait until you have 22 shirts left in your warehouse, and then order 141 new shirts in bulk to resupply. Rinse, repeat, profit baby.
+
+If you have an engineer on staff, incorporating this code into your business workflow should be trivial, but if you mostly have business-type people on staff, I'd recommend looking into Bert (https://bert-toolkit.com/#:~:text=BERT%20is%20a%20tool%20for,do%20is%20write%20the%20function.) Bert is a toolkit for integrating R-scripts directly into Excel, and should not be confused with BERT- the language model that AI guys talk about. This way analysts can play with the inputs to the model in a form factor they're familiar with.
+
+This solution was constructed within 24hrs of Shaan posting his bounty for a better way to "forecast inventory buys." Unlike the dropshipping bros in the X-comments, I have no desire to come on the Pod, but I do need the money. I'm currently in my starving, build-a-business in your dad's garage phase of life and really need some dental work done.
+
+
+
